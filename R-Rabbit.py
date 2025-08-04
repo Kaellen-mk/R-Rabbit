@@ -1,0 +1,514 @@
+import pygame
+import random
+import math
+
+# Inicializa Pygame e mixer
+pygame.init()
+try:
+    pygame.mixer.init()
+    sound_enabled = True
+except Exception as e:
+    print("Aviso: mixer de áudio não pôde ser inicializado:", e)
+    sound_enabled = False
+
+# Tela
+screen_width = 800
+screen_height = 400
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("R-Rabbit - Level Up Edition")
+
+# Cores
+azul = (135, 206, 235)
+azul_escuro = (70, 130, 180)
+verde_grama = (34, 139, 34)
+verde_tufo = (0, 100, 0)
+black = (0, 0, 0)
+white = (255, 255, 255)
+red = (255, 50, 50)
+yellow = (255, 255, 0)
+orange = (255, 165, 0)
+
+# Clock e fonte
+clock = pygame.time.Clock()
+font = pygame.font.Font(None, 74)
+small_font = pygame.font.Font(None, 36)
+tiny_font = pygame.font.Font(None, 24)
+
+# Estados do jogo
+GAME_STATES = {
+    "MENU": 0,
+    "PLAYING": 1,
+    "GAME_OVER": 2,
+    "PAUSED": 3
+}
+
+# Imagens (com tratamento de erro)
+def load_image(path, size=None):
+    try:
+        image = pygame.image.load(path)
+        if size:
+            image = pygame.transform.scale(image, size)
+        return image
+    except:
+        print(f"Aviso: Imagem {path} não encontrada.")
+        # Cria superfície替代
+        if size:
+            surface = pygame.Surface(size)
+            surface.fill((255, 0, 255))  # Rosa para indicar erro
+            return surface
+        return None
+
+rabbit_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/rabbit.png', (70, 70))
+carrot_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/carrot.png', (60, 60))
+cloud_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/cloud.png', (100, 60))
+
+# Criar imagens alternativas caso os arquivos não existam
+if rabbit_image is None:
+    rabbit_image = pygame.Surface((70, 70))
+    rabbit_image.fill((200, 200, 200))
+    pygame.draw.circle(rabbit_image, (255, 255, 255), (35, 35), 25)
+    pygame.draw.circle(rabbit_image, (0, 0, 0), (25, 25), 3)  # Olho
+
+if carrot_image is None:
+    carrot_image = pygame.Surface((60, 60))
+    carrot_image.fill((255, 165, 0))
+    pygame.draw.polygon(carrot_image, (139, 69, 19), [(30, 5), (25, 60), (35, 60)])
+
+if cloud_image is None:
+    cloud_image = pygame.Surface((100, 60))
+    cloud_image.fill(azul)
+    pygame.draw.circle(cloud_image, (255, 255, 255), (30, 30), 20)
+    pygame.draw.circle(cloud_image, (255, 255, 255), (50, 25), 25)
+    pygame.draw.circle(cloud_image, (255, 255, 255), (70, 30), 20)
+
+# Sons
+if sound_enabled:
+    try:
+        jump_sound = pygame.mixer.Sound('jump.wav')
+    except:
+        print("Aviso: jump.wav não encontrado.")
+        jump_sound = None
+    try:
+        game_over_sound = pygame.mixer.Sound('game_over.wav')
+    except:
+        print("Aviso: game_over.wav não encontrado.")
+        game_over_sound = None
+    try:
+        point_sound = pygame.mixer.Sound('point.wav')
+    except:
+        print("Aviso: point.wav não encontrado.")
+        point_sound = None
+else:
+    jump_sound = None
+    game_over_sound = None
+    point_sound = None
+
+# Sistema de partículas
+particles = []
+
+def create_particles(x, y, color, count=10):
+    for _ in range(count):
+        particles.append({
+            "x": x,
+            "y": y,
+            "vx": random.uniform(-3, 3),
+            "vy": random.uniform(-5, -1),
+            "life": 30,
+            "color": color,
+            "size": random.randint(2, 5)
+        })
+
+def update_particles():
+    for particle in particles[:]:
+        particle["x"] += particle["vx"]
+        particle["y"] += particle["vy"]
+        particle["vy"] += 0.1  # Gravidade leve
+        particle["life"] -= 1
+        
+        if particle["life"] <= 0 or particle["y"] > screen_height:
+            particles.remove(particle)
+
+def draw_particles():
+    for particle in particles:
+        alpha = min(255, particle["life"] * 8)
+        color_with_alpha = (*particle["color"], alpha)
+        pygame.draw.circle(screen, particle["color"], 
+                         (int(particle["x"]), int(particle["y"])), 
+                         particle["size"])
+
+# Nuvens iniciais
+clouds = [
+    {"x": 300, "y": 50, "speed": 2},
+    {"x": 600, "y": 30, "speed": 1},
+    {"x": 100, "y": 70, "speed": 1.5}
+]
+
+# Tipos de obstáculos
+def create_obstacle():
+    obstacle_types = [
+        {"type": "carrot", "width": 60, "height": 60, "image": carrot_image},
+        {"type": "rock", "width": 40, "height": 40, "image": None}  # Será desenhado como retângulo
+    ]
+    
+    obstacle = random.choice(obstacle_types).copy()
+    obstacle.update({
+        "x": screen_width,
+        "y": screen_height - 70 - (obstacle["height"] if obstacle["type"] == "carrot" else 30),
+        "speed": 7
+    })
+    return obstacle
+
+# Power-ups
+def create_power_up():
+    power_up_types = [
+        {"type": "double_points", "color": yellow, "width": 30, "height": 30},
+        {"type": "shield", "color": (0, 255, 255), "width": 30, "height": 30}
+    ]
+    
+    power_up = random.choice(power_up_types).copy()
+    power_up.update({
+        "x": screen_width,
+        "y": random.randint(100, screen_height - 150),
+        "speed": 5
+    })
+    return power_up
+
+# Funções de desenho
+def draw_rabbit(x, y, is_jumping=False):
+    screen.blit(rabbit_image, (x, y))
+    # Efeito de olhos brilhantes quando pula
+    if is_jumping:
+        pygame.draw.circle(screen, (255, 255, 255), (int(x + 20), int(y + 20)), 3)
+        pygame.draw.circle(screen, (255, 255, 255), (int(x + 50), int(y + 20)), 3)
+
+def draw_obstacle(obstacle):
+    if obstacle["type"] == "carrot" and obstacle["image"]:
+        screen.blit(obstacle["image"], (obstacle["x"], obstacle["y"]))
+    else:  # Rock ou outros
+        pygame.draw.rect(screen, (139, 69, 19), 
+                        (obstacle["x"], obstacle["y"], obstacle["width"], obstacle["height"]))
+        pygame.draw.rect(screen, (101, 67, 33), 
+                        (obstacle["x"], obstacle["y"], obstacle["width"], obstacle["height"]), 2)
+
+def draw_power_up(power_up):
+    pygame.draw.circle(screen, power_up["color"], 
+                      (int(power_up["x"] + power_up["width"]//2), 
+                       int(power_up["y"] + power_up["height"]//2)), 
+                      power_up["width"]//2)
+    pygame.draw.circle(screen, (255, 255, 255), 
+                      (int(power_up["x"] + power_up["width"]//2), 
+                       int(power_up["y"] + power_up["height"]//2)), 
+                      power_up["width"]//2, 2)
+    
+    # Ícone do power-up
+    if power_up["type"] == "double_points":
+        text = tiny_font.render("2x", True, (0, 0, 0))
+        screen.blit(text, (power_up["x"] + 8, power_up["y"] + 8))
+    elif power_up["type"] == "shield":
+        pygame.draw.circle(screen, (0, 0, 0), 
+                          (int(power_up["x"] + power_up["width"]//2), 
+                           int(power_up["y"] + power_up["height"]//2)), 
+                          power_up["width"]//3, 2)
+
+def draw_grass(offset=0):
+    ground_height = 50
+    y = screen_height - ground_height
+    pygame.draw.rect(screen, verde_grama, (0, y, screen_width, ground_height))
+
+    # Tufos de grama
+    tile_width = 20
+    for i in range(0, screen_width + tile_width, tile_width):
+        x = (i - offset % tile_width)
+        pygame.draw.rect(screen, verde_tufo, (x, y, 3, 10))
+        pygame.draw.rect(screen, verde_tufo, (x + 5, y + 5, 2, 7))
+        pygame.draw.rect(screen, verde_tufo, (x + 10, y, 3, 10))
+
+def draw_clouds():
+    for cloud in clouds:
+        screen.blit(cloud_image, (cloud["x"], cloud["y"]))
+        cloud["x"] -= cloud["speed"]
+        if cloud["x"] < -100:
+            cloud["x"] = screen_width + random.randint(0, 200)
+            cloud["y"] = random.randint(20, 80)
+
+def draw_hud(state):
+    # Pontuação
+    score_text = small_font.render(f"Pontos: {state['score']}", True, white)
+    screen.blit(score_text, (10, 10))
+    
+    # Nível
+    level = int(state['speed_multiplier'])
+    level_text = small_font.render(f"Nível: {level}", True, white)
+    screen.blit(level_text, (10, 50))
+    
+    # Recorde
+    high_score_text = small_font.render(f"Recorde: {state.get('high_score', 0)}", True, white)
+    screen.blit(high_score_text, (screen_width - 150, 10))
+    
+    # Power-ups ativos
+    if state.get('double_points_active', 0) > 0:
+        pygame.draw.circle(screen, yellow, (screen_width - 30, 60), 10)
+        text = tiny_font.render("2x", True, (0, 0, 0))
+        screen.blit(text, (screen_width - 35, 55))
+    
+    if state.get('shield_active', False):
+        pygame.draw.circle(screen, (0, 255, 255), (screen_width - 60, 60), 10)
+        pygame.draw.circle(screen, (0, 0, 0), (screen_width - 60, 60), 6, 2)
+
+def draw_menu():
+    # Título com efeito
+    title = font.render("R-RABBIT", True, white)
+    shadow = font.render("R-RABBIT", True, (100, 100, 100))
+    screen.blit(shadow, (screen_width//2 - title.get_width()//2 + 3, 103))
+    screen.blit(title, (screen_width//2 - title.get_width()//2, 100))
+    
+    # Subtítulo
+    subtitle = small_font.render("Level Up Edition", True, yellow)
+    screen.blit(subtitle, (screen_width//2 - subtitle.get_width()//2, 160))
+    
+    # Instruções
+    start_text = small_font.render("Pressione ESPAÇO para jogar", True, white)
+    screen.blit(start_text, (screen_width//2 - start_text.get_width()//2, 250))
+    
+    controls_text = small_font.render("Setas ou ESPAÇO para pular", True, (200, 200, 200))
+    screen.blit(controls_text, (screen_width//2 - controls_text.get_width()//2, 290))
+    
+    # Versão
+    version_text = tiny_font.render("v2.0", True, (200, 200, 200))
+    screen.blit(version_text, (screen_width - 50, screen_height - 30))
+
+def draw_game_over(state):
+    # Overlay semi-transparente
+    overlay = pygame.Surface((screen_width, screen_height))
+    overlay.set_alpha(128)
+    overlay.fill((0, 0, 0))
+    screen.blit(overlay, (0, 0))
+    
+    # Textos do game over
+    game_over_text = font.render("Game Over", True, red)
+    screen.blit(game_over_text, (screen_width // 2 - game_over_text.get_width() // 2, screen_height // 2 - 100))
+
+    score_text = small_font.render(f"Pontuação: {state['score']}", True, white)
+    screen.blit(score_text, (screen_width // 2 - score_text.get_width() // 2, screen_height // 2 - 30))
+    
+    high_score = state.get('high_score', 0)
+    if state['score'] == high_score and high_score > 0:
+        record_text = small_font.render("NOVO RECORDE!", True, yellow)
+        screen.blit(record_text, (screen_width // 2 - record_text.get_width() // 2, screen_height // 2 + 10))
+
+    restart_text = small_font.render("Pressione ENTER para reiniciar", True, white)
+    screen.blit(restart_text, (screen_width // 2 - restart_text.get_width() // 2, screen_height // 2 + 70))
+    
+    menu_text = small_font.render("ESC para voltar ao menu", True, (200, 200, 200))
+    screen.blit(menu_text, (screen_width // 2 - menu_text.get_width() // 2, screen_height // 2 + 110))
+
+def reset_game():
+    return {
+        "rabbit_x": 50,
+        "rabbit_y": screen_height - 70 - 40,
+        "rabbit_jump": False,
+        "jump_velocity": 0,
+        "gravity": 0.8,
+        "jump_power": -15,
+        "obstacles": [],
+        "power_ups": [],
+        "score": 0,
+        "game_over": False,
+        "game_state": GAME_STATES["PLAYING"],
+        "grass_scroll_offset": 0,
+        "speed_multiplier": 1.0,
+        "level_threshold": 5,
+        "spawn_timer": 0,
+        "power_up_timer": 0,
+        "high_score": 0,
+        "double_points_active": 0,
+        "shield_active": False,
+        "shield_timer": 0
+    }
+
+# Inicializa o jogo
+state = reset_game()
+running = True
+
+# Carrega high score se existir
+try:
+    with open("high_score.txt", "r") as f:
+        state["high_score"] = int(f.read())
+except:
+    state["high_score"] = 0
+
+while running:
+    dt = clock.tick(60)  # 60 FPS
+    screen.fill(azul)
+    
+    # Eventos
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                if state["game_state"] == GAME_STATES["PLAYING"]:
+                    state["game_state"] = GAME_STATES["MENU"]
+                elif state["game_state"] == GAME_STATES["MENU"]:
+                    running = False
+                elif state["game_state"] == GAME_STATES["GAME_OVER"]:
+                    state["game_state"] = GAME_STATES["MENU"]
+            
+            if event.key == pygame.K_RETURN and state["game_state"] == GAME_STATES["GAME_OVER"]:
+                # Atualiza high score
+                if state["score"] > state["high_score"]:
+                    state["high_score"] = state["score"]
+                    try:
+                        with open("high_score.txt", "w") as f:
+                            f.write(str(state["high_score"]))
+                    except:
+                        pass
+                state = reset_game()
+            
+            if event.key == pygame.K_SPACE:
+                if state["game_state"] == GAME_STATES["MENU"]:
+                    state["game_state"] = GAME_STATES["PLAYING"]
+                elif state["game_state"] == GAME_STATES["PLAYING"] and not state["rabbit_jump"]:
+                    state["rabbit_jump"] = True
+                    state["jump_velocity"] = state["jump_power"]
+                    if jump_sound:
+                        jump_sound.play()
+    
+    keys = pygame.key.get_pressed()
+    
+    # Atualiza partículas
+    update_particles()
+    
+    # Desenha elementos de fundo
+    draw_clouds()
+    draw_grass(state["grass_scroll_offset"])
+    state["grass_scroll_offset"] += 4 * state["speed_multiplier"]
+    
+    # Menu principal
+    if state["game_state"] == GAME_STATES["MENU"]:
+        draw_menu()
+        draw_particles()
+        pygame.display.update()
+        continue
+    
+    # Game Over
+    if state["game_state"] == GAME_STATES["GAME_OVER"]:
+        draw_game_over(state)
+        draw_particles()
+        pygame.display.update()
+        continue
+    
+    # Gameplay
+    if state["game_state"] == GAME_STATES["PLAYING"]:
+        # Atualiza salto
+        if state["rabbit_jump"]:
+            state["jump_velocity"] += state["gravity"]
+            state["rabbit_y"] += state["jump_velocity"]
+            
+            # Verifica se voltou ao chão
+            ground_y = screen_height - 70 - 40
+            if state["rabbit_y"] >= ground_y:
+                state["rabbit_y"] = ground_y
+                state["rabbit_jump"] = False
+                state["jump_velocity"] = 0
+        
+        # Spawn de obstáculos
+        state["spawn_timer"] += 1
+        if state["spawn_timer"] >= max(30, 90 - int(state["speed_multiplier"] * 10)):
+            state["obstacles"].append(create_obstacle())
+            state["spawn_timer"] = 0
+        
+        # Spawn de power-ups (menos frequente)
+        state["power_up_timer"] += 1
+        if state["power_up_timer"] >= 180 and random.random() < 0.3:
+            state["power_ups"].append(create_power_up())
+            state["power_up_timer"] = 0
+        
+        # Atualiza obstáculos
+        for obstacle in state["obstacles"][:]:
+            obstacle["x"] -= obstacle["speed"] * state["speed_multiplier"]
+            
+            # Remove obstáculos fora da tela
+            if obstacle["x"] < -obstacle["width"]:
+                state["obstacles"].remove(obstacle)
+                # Pontuação por evitar obstáculo
+                points = 1 * (2 if state["double_points_active"] > 0 else 1)
+                state["score"] += points
+                if point_sound and points > 0:
+                    point_sound.play()
+            
+            # Colisão
+            rabbit_rect = pygame.Rect(state["rabbit_x"] + 10, state["rabbit_y"] + 10, 50, 50)
+            obstacle_rect = pygame.Rect(obstacle["x"], obstacle["y"], obstacle["width"], obstacle["height"])
+            
+            if rabbit_rect.colliderect(obstacle_rect):
+                if state["shield_active"]:
+                    # Destrói obstáculo com escudo
+                    state["obstacles"].remove(obstacle)
+                    create_particles(obstacle["x"] + obstacle["width"]//2, 
+                                   obstacle["y"] + obstacle["height"]//2, 
+                                   (0, 255, 255), 15)
+                    state["shield_active"] = False
+                else:
+                    state["game_over"] = True
+                    state["game_state"] = GAME_STATES["GAME_OVER"]
+                    create_particles(state["rabbit_x"] + 35, state["rabbit_y"] + 35, red, 20)
+                    if game_over_sound:
+                        game_over_sound.play()
+        
+        # Atualiza power-ups
+        for power_up in state["power_ups"][:]:
+            power_up["x"] -= power_up["speed"] * state["speed_multiplier"]
+            
+            # Remove power-ups fora da tela
+            if power_up["x"] < -power_up["width"]:
+                state["power_ups"].remove(power_up)
+                continue
+            
+            # Colisão com power-up
+            rabbit_rect = pygame.Rect(state["rabbit_x"] + 10, state["rabbit_y"] + 10, 50, 50)
+            power_up_rect = pygame.Rect(power_up["x"], power_up["y"], power_up["width"], power_up["height"])
+            
+            if rabbit_rect.colliderect(power_up_rect):
+                if power_up["type"] == "double_points":
+                    state["double_points_active"] = 300  # 5 segundos em 60 FPS
+                    create_particles(power_up["x"] + power_up["width"]//2, 
+                                   power_up["y"] + power_up["height"]//2, 
+                                   yellow, 15)
+                elif power_up["type"] == "shield":
+                    state["shield_active"] = True
+                    state["shield_timer"] = 800  # 13 segundos
+                    create_particles(power_up["x"] + power_up["width"]//2, 
+                                   power_up["y"] + power_up["height"]//2, 
+                                   (0, 255, 255), 15)
+                
+                state["power_ups"].remove(power_up)
+        
+        # Atualiza timers de power-ups
+        if state["double_points_active"] > 0:
+            state["double_points_active"] -= 1
+        
+        if state["shield_active"]:
+            state["shield_timer"] -= 1
+            if state["shield_timer"] <= 0:
+                state["shield_active"] = False
+        
+        # Aumenta dificuldade
+        if state["score"] > 0 and state["score"] % state["level_threshold"] == 0:
+            target_multiplier = 1.0 + (state["score"] // state["level_threshold"]) * 0.2
+            state["speed_multiplier"] = min(target_multiplier, state["speed_multiplier"] + 0.005)
+        
+        # Desenha elementos do jogo
+        for obstacle in state["obstacles"]:
+            draw_obstacle(obstacle)
+        
+        for power_up in state["power_ups"]:
+            draw_power_up(power_up)
+        
+        draw_rabbit(state["rabbit_x"], state["rabbit_y"], state["rabbit_jump"])
+        draw_hud(state)
+        draw_particles()
+    
+    pygame.display.update()
+
+pygame.quit()
