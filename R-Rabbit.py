@@ -58,9 +58,9 @@ def load_image(path, size=None):
             return surface
         return None
 
-rabbit_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/rabbit.png', (70, 70))
-carrot_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/carrot.png', (60, 60))
-cloud_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/cloud.png', (100, 60))
+rabbit_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/assets/rabbit.png', (70, 70))
+carrot_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/assets/carrot.png', (60, 60))
+cloud_image = load_image(r'c:/Users/kaell/.vscode/mk/.vscode/C-Coelho/assets/cloud.png', (100, 60))
 
 # Criar imagens alternativas caso os arquivos não existam
 if rabbit_image is None:
@@ -512,3 +512,5 @@ while running:
     pygame.display.update()
 
 pygame.quit()
+
+git branch
