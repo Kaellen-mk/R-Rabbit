@@ -2,7 +2,7 @@
   
 
   <h1 align="center">🐰 R-RABBIT 🐇</h1>
-  <h3 align="center">O jogo viciante que transforma o clássico T-Rex em uma corrida de coelhos!</h3>
+  <h3 align="center">um jogo viciante e divertido inspirado no clássico T-Rex do Chrome, mas com um toque especial: você é um coelho ágil que precisa sobreviver pulando obstáculos, coletando poderes e correndo cada vez mais rápido!</h3>
   
   <br>
   
