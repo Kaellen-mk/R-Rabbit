@@ -47,7 +47,7 @@
     <a href="https://github.com/Kaellen-mk/R-Rabbit/blob/e64f536a12f8bc7fc704c9daf96988e012cfe4de/R-Rabbit.exe" target="_blank">
       <img src="https://img.shields.io/badge/Jogar_Agora-2ECC71?style=for-the-badge&logo=google-chrome" height="32">
     </a>
-  </p>
+  
   
   <br>
   p>
