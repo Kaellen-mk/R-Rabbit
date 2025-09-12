@@ -38,7 +38,7 @@
   <p align="center" style="font-size: 16px; color: #555;">
     Pressione <kbd>Space</kbd> para pular.<br>
     Colete power-ups. Aumente seu poder. Torne-se o INVENCÍVEL!!<br>
-    Evite as cenouras e os troncos de árvores!! 🚫🐇
+    Evite as cenouras e os troncos de árvores!! 🚫
   </p>
   
  
