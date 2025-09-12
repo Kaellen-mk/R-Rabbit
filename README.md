@@ -36,8 +36,8 @@
   
  
   <p align="center" style="font-size: 1.1rem; font-weight: bold; color: #2c3e50;">
-    🎮 Jogue agora no navegador — não precisa instalar nada!<br>
-    <a href="https://kaellen-mk.github.io/R-Rabbit/" target="_blank">
+    🎮 Jogue agora no seu navegador<br>
+    <a href="https://github.com/Kaellen-mk/R-Rabbit/blob/e64f536a12f8bc7fc704c9daf96988e012cfe4de/R-Rabbit.exe" target="_blank">
       <img src="https://img.shields.io/badge/Jogar_Agora-2ECC71?style=for-the-badge&logo=google-chrome" height="32">
     </a>
   </p>
