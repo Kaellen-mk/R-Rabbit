@@ -1,6 +1,7 @@
 
 
 <p align="center"> <br>Olá, jogadores incríveis! 👋<br>
+<br><br>
 
 <img src="https://github.com/Kaellen-mk/R-Rabbit/blob/main/Rabbitt.gif" alt="Meu GIF"  width="1000">
 
