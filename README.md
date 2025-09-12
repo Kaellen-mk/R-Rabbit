@@ -26,8 +26,8 @@
  
   <h3 align="center">✨ O que torna o R-Rabbit especial?</h3>
   <p align="center">
-    <img src="https://img.shields.io/badge/⚡_Pulo_Agil-FF6B6B?style=for-the-badge&logo=javascript" height="28">
-    <img src="https://img.shields.io/badge/🥕_Coleta_de_Cenouras-4ECDC4?style=for-the-badge&logo=html5" height="28">
+    <img src="https://img.shields.io/badge/Simplicidade-4ECDC4?style=for-the-badge&logo=chrome&color=4ECDC4" height="28">
+    <img src="https://img.shields.io/badge/Desafio%20Silencioso-F7931E?style=for-the-badge&logo=javascript&color=F7931E" height="28">
     <img src="https://img.shields.io/badge/🚀_Aceleração_Rápida-45B7D1?style=for-the-badge&logo=css3" height="28">
     <img src="https://img.shields.io/badge/🎯_Modo_Infinito-96CEB4?style=for-the-badge&logo=react" height="28">
   </p>
