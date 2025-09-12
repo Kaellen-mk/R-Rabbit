@@ -36,7 +36,7 @@
 
    <h3 align="center">🕹️ Como Jogar</h3>
   <p align="center" style="font-size: 16px; color: #555;">
-    Pressione <kbd>Space</kbd> ou <kbd>↑</kbd> para pular.<br>
+    Pressione <kbd>Space</kbd> para pular.<br>
     Colete estrelas para ganhar pontos e power-ups!<br>
     Evite as cenouras e os troncos de árvores!! 🚫🐇
   </p>
